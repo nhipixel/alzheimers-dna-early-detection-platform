@@ -11,10 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
-from app.routes import prediction_router
+from app.routes import prediction_router, health_router, analysis_router, websocket_router
 from app.services import get_model_service
 from app.utils import setup_logging, validate_model_files
 from app.models.schemas import ErrorResponse
+from app.middleware import setup_middleware, error_handler_middleware
 
 # Initialize settings
 settings = get_settings()
@@ -95,6 +96,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add custom middleware
+setup_middleware(app)
+error_handler_middleware(app)
+
 
 # Global exception handler
 @app.exception_handler(HTTPException)
@@ -125,7 +130,10 @@ async def general_exception_handler(request, exc):
 
 
 # Include routers
-app.include_router(prediction_router, prefix=settings.api_v1_prefix)
+app.include_router(prediction_router, prefix=f"{settings.api_v1_prefix}", tags=["predictions"])
+app.include_router(health_router, prefix=f"{settings.api_v1_prefix}", tags=["health"])
+app.include_router(analysis_router, prefix=f"{settings.api_v1_prefix}/analyses", tags=["analyses"])
+app.include_router(websocket_router, prefix=f"{settings.api_v1_prefix}", tags=["websocket"])
 
 
 # Root endpoint
